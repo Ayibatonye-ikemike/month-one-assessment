@@ -1,0 +1,6 @@
+# TechCorp Infrastructure Variables - Template
+region            = "us-east-1"
+my_ip_address     = ""102.89.40.149/32"
+key_name          = "my-new-key"
+instance_type_web = "t3.micro"
+instance_type_db  = "t3.small
