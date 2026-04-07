@@ -1,9 +1,19 @@
 #!/bin/bash
-# AL2023 uses dnf and doesn't require amazon-linux-extras
-dnf update -y
-dnf install -y postgresql15-server postgresql15
+exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1
 
-# Initialize and start the service
-postgresql-setup --initdb
-systemctl start postgresql
-systemctl enable postgresql
+echo "--- Starting Database Setup ---"
+
+# Retry loop for internet connectivity
+for i in {1..10}; do
+    sudo dnf install -y postgresql15-server && break || sleep 15
+done
+
+sudo postgresql-setup --initdb
+
+# Automated config update
+CONF_DIR=$(sudo find /var/lib/pgsql -name "postgresql.conf" -printf '%h\n' | head -n 1)
+sudo sed -i "s/#listen_addresses = 'localhost'/listen_addresses = '*'/g" "$CONF_DIR/postgresql.conf"
+echo "host all all 10.0.0.0/16 trust" | sudo tee -a "$CONF_DIR/pg_hba.conf"
+
+sudo systemctl enable --now postgresql
+echo "--- Postgres Setup Complete ---"
